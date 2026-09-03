@@ -262,7 +262,7 @@ with st.sidebar:
             st.rerun()
             
     st.subheader("Decision intelligence")
-    default_provider = os.getenv("GRIDGUARD_DECISION_PROVIDER", "internal_expert_system").strip().lower()
+    default_provider = os.getenv("GRIDGUARD_DECISION_PROVIDER", "groq").strip().lower()
     provider_index = provider_options.index(default_provider) if default_provider in provider_options else 0
     decision_provider = st.selectbox(
         "Decision engine",

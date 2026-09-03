@@ -1,0 +1,39 @@
+# GridGuard AI
+## Project Links
+## Product walkthrough
+## Feature summary
+## Technology stack
+## Architecture
+## End-to-end data flow
+# Three-source data architecture
+## Canonical schema
+## 1. Synthetic Demo
+## 2. Kaggle Historical
+## 3. EIA Live
+## Forecasting and model governance
+## X-Decision System
+## Decision-provider switch
+## Token meter
+## JSON-backed memory
+## Local RAG
+## Risk and scenario engine
+## Human approval and audit
+## Persistence
+## Streamlit interface
+## Flask API
+## Quick start
+## Environment configuration
+## Railway deployment
+## Project structure
+## Screenshots for the portfolio
+## Testing
+## Production roadmap
+## Limitations and safety
+## Project structure
+## Screenshots for the portfolio
+## Testing
+## Production roadmap
+## Limitations and safety
+## ⚠️ Disclaimer & Trademark Notice
+## License
+## Voice Escalation & CALL-E Integration (Major Extension)
