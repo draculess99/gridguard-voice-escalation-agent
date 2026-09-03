@@ -1,0 +1,66 @@
+import pytest
+from unittest.mock import patch, MagicMock
+from backend.call_e_integration import dispatch_escalation
+
+def test_dry_run_mode():
+    """Test that dry_run mode returns fixture data without attempting any network calls."""
+    res = dispatch_escalation(goal="Test goal", test_number="+15550100000", dry_run=True)
+    assert res["status"] == "escalation_completed"
+    assert res["acknowledgement"] is True
+    assert res["availability"] == "Available"
+    assert "MOCK TRANSCRIPT" in res["transcript_summary"]
+
+@patch.dict("os.environ", clear=True)
+def test_live_mode_missing_api_key():
+    """Test that live mode fails closed if CALLE_API_KEY is missing."""
+    with pytest.raises(ValueError, match="Missing CALLE_API_KEY"):
+        dispatch_escalation(goal="Test goal", test_number="+15550100000", dry_run=False)
+
+@patch.dict("os.environ", {"CALLE_API_KEY": "fake_key"})
+def test_live_mode_unauthorized_number():
+    """Test that live mode strictly enforces the test E.164 number limit."""
+    with pytest.raises(ValueError, match="Live mode only authorized for test number"):
+        dispatch_escalation(goal="Test goal", test_number="+1234567890", dry_run=False)
+
+@patch("backend.call_e_integration.CalleClient")
+@patch.dict("os.environ", {"CALLE_API_KEY": "fake_key"})
+def test_live_mode_successful_call(mock_calle_client):
+    """Test the successful execution and parsing of a live call using the SDK mock."""
+    mock_client = MagicMock()
+    mock_calle_client.return_value = mock_client
+    
+    mock_client.calls.create.return_value = {"id": "call_123"}
+    
+    mock_client.calls.wait_for_result.return_value = {
+        "status": "completed",
+        "attempts": [
+            {
+                "transcript_summary": "Real operator acknowledged.",
+                "structured_result": {
+                    "acknowledgement": True,
+                    "availability": "En Route",
+                    "eta_minutes": 30,
+                    "escalation_status": "Dispatching team"
+                }
+            }
+        ]
+    }
+    
+    res = dispatch_escalation(goal="Critical Risk", test_number="+15550100000", dry_run=False)
+    
+    assert res["status"] == "escalation_completed"
+    assert res["acknowledgement"] is True
+    assert res["availability"] == "En Route"
+    assert res["eta_minutes"] == 30
+    assert "Real operator" in res["transcript_summary"]
+    
+    # Verify SDK was called correctly
+    mock_client.calls.create.assert_called_once()
+    call_kwargs = mock_client.calls.create.call_args.kwargs
+    assert call_kwargs["task"] == "Critical Risk"
+    assert call_kwargs["recipients"][0]["phones"] == ["+15550100000"]
+    assert "idempotency_key" in call_kwargs
+    assert call_kwargs["result_schema"]["type"] == "object"
+    assert "escalation_status" in call_kwargs["recipient_result_schema"]["properties"]
+    
+    mock_client.calls.wait_for_result.assert_called_once_with("call_123")
