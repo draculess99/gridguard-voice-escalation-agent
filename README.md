@@ -40,14 +40,14 @@ The numerical forecast and decision explanation are intentionally separated:
 
 ## Project Links
 
-- **Live Demo:** https://workforceagenticall-production.up.railway.app/GridGuard_AI/
-- **GitHub Repository:** https://github.com/draculess99/GridGuard_AI/
+- **Live Demo:** https://gridguard-voice-escalation-agent-production.up.railway.app
+- **GitHub Repository:** https://github.com/draculess99/gridguard-voice-escalation-agent
 - **LinkedIn:** https://www.linkedin.com/in/gammaconsult/
 - **Portfolio:** https://draculess99.github.io/
 
 ---
 
-## Screenshots
+## Product walkthrough
 
 | Control Tower & Forecast | Multi-Agent Debate Committee |
 |:---:|:---:|
@@ -56,6 +56,18 @@ The numerical forecast and decision explanation are intentionally separated:
 | Scenario Lab Stress Testing | Architecture & Data Sources |
 |:---:|:---:|
 | ![Scenario Lab](docs/images/03_scenario_lab.png)<br><sub>Modifying temperature inputs and simulating unexpected demand shocks to stress-test the forecast.</sub> | ![Data Sources](docs/images/04_data_sources.png)<br><sub>Configuring Synthetic, Kaggle Historical, or EIA Live API data ingestion.</sub> |
+
+| Voice Escalation Overview | Safety Gates & Consent |
+|:---:|:---:|
+| ![Voice Escalation](docs/images/05_voice_escalation_overview.png)<br><sub>The CALL-E escalation tab interface. *Demonstrates dry-run preview mode; no real call was placed.*</sub> | ![Safety Gates](docs/images/06_voice_escalation_safety_gates.png)<br><sub>Explicit human-in-the-loop consent gates required before dispatch. *Demonstrates dry-run preview mode; no real call was placed.*</sub> |
+
+| Escalation Result Packet | CALL-E Architecture |
+|:---:|:---:|
+| ![Dry Run Result](docs/images/07_dry_run_escalation_result.png)<br><sub>The structured JSON result returned from the CALL-E agent. *Demonstrates dry-run preview mode; no real call was placed.*</sub> | ![CALL-E Architecture](docs/images/08_call_e_architecture.png)<br><sub>The technical architecture diagram mapping the CALL-E Python SDK integration and safety flow.</sub> |
+
+| Public Railway Deployment | |
+|:---:|---|
+| ![Railway Deployment](docs/images/09_public_railway_deployment.png)<br><sub>The live Railway URL in the browser, proving the public deployment is successfully running and reviewable.</sub> | |
 
 ---
 
