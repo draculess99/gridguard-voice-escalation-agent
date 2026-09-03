@@ -50,7 +50,7 @@ To use the live CALL-E service, you must configure the application with your API
 > **Safety Controls & Dry-Run Mode**
 > By default, the application runs in **Dry-run preview mode**. In this mode, no real calls are placed. Instead, the application mocks the interaction with the CALL-E agent and parses synthetic response payloads (fixture data). This ensures that developers and operators can safely test the escalation workflow without accidentally triggering outbound calls.
 > 
-> Furthermore, even when Live Mode is toggled on, the application is **strictly hardcoded** to only dispatch calls to the authorized test number: `+15550100000`.
+> Furthermore, even when Live Mode is toggled on, the application requires both `CALLE_API_KEY` and `CALLE_AUTHORIZED_TEST_NUMBER` to be configured privately in the runtime environment. The public Railway demo remains dry-run by default and does not expose either secret.
 
 ### Consent & Safety
 GridGuard acts as **decision support only**.

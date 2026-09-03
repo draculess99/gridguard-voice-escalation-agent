@@ -1,4 +1,5 @@
 import os
+import re
 import hashlib
 from datetime import datetime, timezone
 from calle import CalleClient
@@ -9,7 +10,7 @@ def get_calle_client() -> CalleClient | None:
         return None
     return CalleClient(api_key=api_key)
 
-def dispatch_escalation(goal: str, test_number: str = "+15550100000", dry_run: bool = True) -> dict:
+def dispatch_escalation(goal: str, dry_run: bool = True) -> dict:
     """
     Dispatches a voice escalation call via the CALL-E Python SDK.
     """
@@ -32,8 +33,12 @@ def dispatch_escalation(goal: str, test_number: str = "+15550100000", dry_run: b
         raise ValueError("Missing CALLE_API_KEY for live mode.")
 
     # 2. Strict E.164 lock check
-    if test_number != "+15550100000":
-        raise ValueError(f"Live mode only authorized for test number +15550100000, got {test_number}")
+    test_number = os.environ.get("CALLE_AUTHORIZED_TEST_NUMBER")
+    if not test_number:
+        raise ValueError("Missing CALLE_AUTHORIZED_TEST_NUMBER for live mode.")
+    
+    if not re.match(r'^\+[1-9]\d{1,14}$', test_number):
+        raise ValueError(f"Invalid E.164 phone number configured for CALLE_AUTHORIZED_TEST_NUMBER.")
 
     # 3. Generate a stable idempotency key (hourly stable per goal)
     current_hour = datetime.now(timezone.utc).strftime("%Y-%m-%d-%H")

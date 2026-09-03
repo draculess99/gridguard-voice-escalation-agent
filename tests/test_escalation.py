@@ -4,7 +4,7 @@ from backend.call_e_integration import dispatch_escalation
 
 def test_dry_run_mode():
     """Test that dry_run mode returns fixture data without attempting any network calls."""
-    res = dispatch_escalation(goal="Test goal", test_number="+15550100000", dry_run=True)
+    res = dispatch_escalation(goal="Test goal", dry_run=True)
     assert res["status"] == "escalation_completed"
     assert res["acknowledgement"] is True
     assert res["availability"] == "Available"
@@ -14,16 +14,22 @@ def test_dry_run_mode():
 def test_live_mode_missing_api_key():
     """Test that live mode fails closed if CALLE_API_KEY is missing."""
     with pytest.raises(ValueError, match="Missing CALLE_API_KEY"):
-        dispatch_escalation(goal="Test goal", test_number="+15550100000", dry_run=False)
+        dispatch_escalation(goal="Test goal", dry_run=False)
 
 @patch.dict("os.environ", {"CALLE_API_KEY": "fake_key"})
-def test_live_mode_unauthorized_number():
-    """Test that live mode strictly enforces the test E.164 number limit."""
-    with pytest.raises(ValueError, match="Live mode only authorized for test number"):
-        dispatch_escalation(goal="Test goal", test_number="+1234567890", dry_run=False)
+def test_live_mode_missing_test_number():
+    """Test that live mode fails closed if CALLE_AUTHORIZED_TEST_NUMBER is missing."""
+    with pytest.raises(ValueError, match="Missing CALLE_AUTHORIZED_TEST_NUMBER"):
+        dispatch_escalation(goal="Test goal", dry_run=False)
+
+@patch.dict("os.environ", {"CALLE_API_KEY": "fake_key", "CALLE_AUTHORIZED_TEST_NUMBER": "12345"})
+def test_live_mode_invalid_test_number():
+    """Test that live mode fails closed if CALLE_AUTHORIZED_TEST_NUMBER is not valid E.164."""
+    with pytest.raises(ValueError, match="Invalid E.164 phone number configured"):
+        dispatch_escalation(goal="Test goal", dry_run=False)
 
 @patch("backend.call_e_integration.CalleClient")
-@patch.dict("os.environ", {"CALLE_API_KEY": "fake_key"})
+@patch.dict("os.environ", {"CALLE_API_KEY": "fake_key", "CALLE_AUTHORIZED_TEST_NUMBER": "+15550199999"})
 def test_live_mode_successful_call(mock_calle_client):
     """Test the successful execution and parsing of a live call using the SDK mock."""
     mock_client = MagicMock()
@@ -46,7 +52,7 @@ def test_live_mode_successful_call(mock_calle_client):
         ]
     }
     
-    res = dispatch_escalation(goal="Critical Risk", test_number="+15550100000", dry_run=False)
+    res = dispatch_escalation(goal="Critical Risk", dry_run=False)
     
     assert res["status"] == "escalation_completed"
     assert res["acknowledgement"] is True
@@ -58,7 +64,7 @@ def test_live_mode_successful_call(mock_calle_client):
     mock_client.calls.create.assert_called_once()
     call_kwargs = mock_client.calls.create.call_args.kwargs
     assert call_kwargs["task"] == "Critical Risk"
-    assert call_kwargs["recipients"][0]["phones"] == ["+15550100000"]
+    assert call_kwargs["recipients"][0]["phones"] == ["+15550199999"]
     assert "idempotency_key" in call_kwargs
     assert call_kwargs["result_schema"]["type"] == "object"
     assert "escalation_status" in call_kwargs["recipient_result_schema"]["properties"]

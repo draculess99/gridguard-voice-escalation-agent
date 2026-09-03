@@ -889,9 +889,12 @@ with tab_escalation:
     if risk["level"] in ["CRITICAL", "ELEVATED"]:
         st.warning(f"High-risk forecast detected ({risk['level']}). A draft voice escalation has been prepared.")
         
+        test_number = os.environ.get("CALLE_AUTHORIZED_TEST_NUMBER")
+        masked_number = f"***-***-{test_number[-4:]}" if test_number else "Not configured"
+        
         c1, c2 = st.columns([2, 1])
         with c1:
-            st.text_input("Recipient Phone Number", value="***-***-8492", disabled=True, help="Masked for security")
+            st.text_input("Authorized Test Recipient", value=masked_number, disabled=True, help="Masked for security")
             
         goal = st.text_area(
             "Call Goal", 
@@ -908,8 +911,14 @@ with tab_escalation:
             
             dry_run_toggle = st.toggle("Dry-run preview (Default)", value=True)
             live_mode = not dry_run_toggle
+            
+            can_dispatch = True
             if live_mode:
-                st.error("🚨 LIVE MODE: This will place a real disclosed test call to +15550100000.")
+                if not test_number:
+                    st.error("🚨 LIVE MODE BLOCKED: CALLE_AUTHORIZED_TEST_NUMBER is not configured.")
+                    can_dispatch = False
+                else:
+                    st.error("🚨 LIVE MODE: This will place a real disclosed test call to the configured authorized test recipient.")
             
             consent_draft = st.checkbox("1️⃣ I verify the call details and consent to drafting this voice escalation.")
             
@@ -923,10 +932,10 @@ with tab_escalation:
                 consent_dispatch = st.checkbox(confirm_label)
                 
                 button_label = "Place real disclosed test call" if live_mode else "Run Dry-Run Preview"
-                if st.button(button_label, type="primary", disabled=not consent_dispatch):
+                if st.button(button_label, type="primary", disabled=not (consent_dispatch and can_dispatch)):
                     try:
                         with st.spinner("Dispatching call via CALL-E SDK..."):
-                            final_res = dispatch_escalation(goal, test_number="+15550100000", dry_run=not live_mode)
+                            final_res = dispatch_escalation(goal, dry_run=not live_mode)
                             
                         st.success("Escalation Complete")
                         if not live_mode:
