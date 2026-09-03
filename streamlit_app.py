@@ -901,13 +901,7 @@ with tab_escalation:
             st.markdown("#### 🛡️ Live-Call Safety Panel")
             st.info("⚠️ **AI Disclosure**: This call will be placed by an AI voice agent (CALL-E). The recipient will be informed they are speaking with an AI.")
             
-            st.markdown(
-                """
-                > [!IMPORTANT]
-                > **Decision Support Only**
-                > This agent never controls grid infrastructure, makes emergency decisions on its own, or autonomously contacts real utilities or customers without explicit human initiation and second-level consent.
-                """
-            )
+            st.warning("**Decision support only.** This agent never controls grid infrastructure, makes emergency decisions, or contacts recipients without explicit human initiation and second-level consent.")
             
             dry_run_toggle = st.toggle("Dry-run preview (Default)", value=True)
             live_mode = not dry_run_toggle
