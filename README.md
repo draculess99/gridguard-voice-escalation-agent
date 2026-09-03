@@ -114,9 +114,25 @@ JSON files                    Local decisions, memory and token ledger
 
 GridGuard deliberately keeps **Streamlit + Flask** because that is the fastest route from a portfolio MVP to a deployable application without rewriting the frontend.
 
----
-
 ## Architecture
+
+```mermaid
+flowchart TD
+    DS[Data sources] --> XGB[XGBoost forecast & risk engine]
+    XGB --> DEC[Critical-risk decision]
+    DEC --> REV[Human review]
+    REV --> GATE[Explicit approval gate]
+    GATE --> ESC[CALL-E escalation service]
+    ESC --> SDK[CALL-E Python SDK]
+    SDK --> CAPI[CALL-E Calls API]
+    CAPI --> RCPT[Disclosed authorized recipient]
+    RCPT --> RES[Structured result]
+    RES --> PKT[Escalation packet and audit trail]
+```
+
+> **Note:** Dry-run is the default. Live calls require an authorized recipient, AI disclosure, and two explicit human confirmations.
+
+### Detailed component view
 
 ```mermaid
 flowchart LR
@@ -130,9 +146,9 @@ flowchart LR
     ADAPTER --> VALIDATE[Validation and Quality Checks]
     VALIDATE --> SCHEMA[Canonical Hourly Schema]
     SCHEMA --> FE[Feature Engineering]
-    FE --> XGB[XGBoost Forecast]
-    XGB --> BASE[Seasonal-Naive Comparison]
-    XGB --> RISK[Peak and Reserve Risk]
+    FE --> XGB_DET[XGBoost Forecast]
+    XGB_DET --> BASE[Seasonal-Naive Comparison]
+    XGB_DET --> RISK[Peak and Reserve Risk]
 
     RISK --> EXP[Internal Expert System]
     DOCS[Local Policy Documents] --> RAG[TF-IDF RAG]
@@ -151,17 +167,17 @@ flowchart LR
 
     BRIEF --> HITL[Human Approval or Rejection]
     HITL --> STORE[(JSON or PostgreSQL Decision Audit)]
-    HITL --> ESC[Voice Escalation UI]
+    HITL --> ESC_UI[Voice Escalation UI]
     
-    ESC --> GATE[Approval Gate]
-    GATE --> SDK[CALL-E Python SDK]
-    SDK --> CAPI[CALL-E Calls API]
-    CAPI --> RCPT[Recipient]
+    ESC_UI --> GATE_UI[Approval Gate]
+    GATE_UI --> SDK_UI[CALL-E Python SDK]
+    SDK_UI --> CAPI_UI[CALL-E Calls API]
+    CAPI_UI --> RCPT_UI[Recipient]
     
-    RCPT --> CAPI
-    CAPI --> SDK
-    SDK --> PKT[CALL-E Structured Result / Transcript]
-    PKT --> STORE
+    RCPT_UI --> CAPI_UI
+    CAPI_UI --> SDK_UI
+    SDK_UI --> PKT_UI[CALL-E Structured Result / Transcript]
+    PKT_UI --> STORE
     
     XDEC --> MEM[(JSON Decision Memory)]
     GROK --> TOK[(JSON Token Ledger)]
