@@ -12,6 +12,10 @@
 
 GridGuard AI is a portfolio-ready decision-support application that forecasts the next **12–48 hours** of electricity demand, identifies peak-risk periods, explains the evidence behind a recommendation, and requires a human operator to approve or reject the proposed response.
 
+> [!NOTE]
+> **Community Contribution**
+> The Voice Escalation extension of this project was submitted to the [CALLE-AI/awesome-phone-call-agents](https://github.com/CALLE-AI/awesome-phone-call-agents) community repository. This was done to demonstrate how to build a highly constrained, human-in-the-loop voice agent that prioritizes safety (using explicit consent gates and a dry-run default) over fully autonomous execution. It serves as a public portfolio piece and a reference pattern for responsible AI agent design.
+
 The application can ingest and normalize three different data-source types:
 
 1. **Synthetic Demo** — reproducible offline data and controlled stress scenarios.
