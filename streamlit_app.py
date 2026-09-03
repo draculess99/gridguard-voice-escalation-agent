@@ -926,6 +926,8 @@ with tab_escalation:
                             final_res = dispatch_escalation(goal, test_number="+15550100000", dry_run=not live_mode)
                             
                         st.success("Escalation Complete")
+                        if not live_mode:
+                            st.info("### Dry-run fixture result — no real phone call was placed.")
                         st.json(final_res)
                         
                     except Exception as e:
