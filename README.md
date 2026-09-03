@@ -147,6 +147,18 @@ flowchart LR
 
     BRIEF --> HITL[Human Approval or Rejection]
     HITL --> STORE[(JSON or PostgreSQL Decision Audit)]
+    HITL --> ESC[Voice Escalation UI]
+    
+    ESC --> GATE[Approval Gate]
+    GATE --> SDK[CALL-E Python SDK]
+    SDK --> CAPI[CALL-E Calls API]
+    CAPI --> RCPT[Recipient]
+    
+    RCPT --> CAPI
+    CAPI --> SDK
+    SDK --> PKT[CALL-E Structured Result / Transcript]
+    PKT --> STORE
+    
     XDEC --> MEM[(JSON Decision Memory)]
     GROK --> TOK[(JSON Token Ledger)]
     GROQ --> TOK
@@ -187,8 +199,17 @@ sequenceDiagram
         L->>L: Compliance (Gemini) checks policy
         L-->>UI: Chief Dispatcher (Groq/Gemini) synthesis
     end
-    O->>UI: Approve or reject with rationale
+    O->>UI: Human reviews evidence (Approve/Reject)
     UI->>D: Persist decision and data provenance
+    
+    opt High-Risk Scenario
+        UI->>O: Present Draft Voice Escalation
+        O->>UI: Explicit Live Approval or Dry-Run Preview
+        UI->>A: CALL-E Call Creation (client.calls.create)
+        A->>A: Result Polling (client.calls.wait_for_result)
+        A-->>UI: Structured Escalation Packet (Transcript & Result)
+        UI->>D: Persist Escalation Result
+    end
 ```
 
 ---
@@ -1012,6 +1033,200 @@ Multiple replicas + shared cache/queue + centralized observability
 - Reset buttons do not restore provider quota or credits.
 - No recommendation is executed automatically.
 - Human review is mandatory.
+```env
+XAI_API_KEY=
+GROQ_API_KEY=
+GEMINI_API_KEY=
+EIA_API_KEY=
+```
+
+6. Redeploy.
+7. Confirm `/health`, `/ready`, `/api/data/sources`, and `/api/intelligence/status`.
+8. Start with Synthetic Demo and the Internal Expert System.
+9. Test Kaggle through the Streamlit upload control or a repository-mounted data file.
+10. Enable EIA Live after adding the EIA key.
+
+The Streamlit and Flask components remain in one Railway service for the MVP. PostgreSQL is a separate Railway service.
+
+---
+
+## Project structure
+
+```text
+gridguard_ai_mvp/
+├── streamlit_app.py
+├── run.py
+├── backend/
+│   ├── api.py
+│   ├── config.py
+│   ├── data.py
+│   ├── features.py
+│   ├── modeling.py
+│   ├── risk.py
+│   ├── service.py
+│   ├── expert_system.py
+│   ├── decision_intelligence.py
+│   ├── llm_providers.py
+│   ├── rag.py
+│   ├── memory.py
+│   ├── token_meter.py
+│   └── persistence.py
+├── data/
+│   ├── kaggle/
+│   │   └── README.md
+│   └── runtime/
+├── docs/
+│   ├── images/
+│   └── rag/
+│       ├── grid_operations_playbook.md
+│       ├── demand_response_policy.md
+│       └── model_governance.md
+├── tests/
+├── Dockerfile
+├── railway.toml
+├── requirements.txt
+└── .env.example
+```
+
+---
+
+## Screenshots for the portfolio
+
+Store screenshots under `docs/images/`:
+
+```text
+docs/images/
+├── control_tower.png
+├── three_data_sources.png
+├── kaggle_adapter.png
+├── x_decision_rag.png
+├── provider_token_meter.png
+├── scenario_lab.png
+├── model_quality.png
+└── audit_operations.png
+```
+
+Recommended captures:
+
+1. Control Tower with active source and 24-hour forecast.
+2. Data Sources tab showing Synthetic, Kaggle and EIA inputs.
+3. Kaggle upload with detected timestamp and regional MW series.
+4. X-Decision briefing using the internal expert system.
+5. RAG source chunks and fired-rule trace.
+6. Groq, Grok or Gemini provider switch and token meter.
+7. Heatwave plus generator-outage scenario.
+8. XGBoost versus seasonal-naive holdout results.
+9. PostgreSQL readiness and decision audit on Railway.
+
+---
+
+## Testing
+
+```bash
+pytest -q
+```
+
+The suite covers:
+
+- synthetic demand generation;
+- canonical schema construction;
+- Kaggle PJM-style column detection;
+- Kaggle CSV normalization;
+- Kaggle ZIP selection;
+- missing-hour interpolation and error behavior;
+- three-source catalog and API endpoint;
+- feature engineering;
+- XGBoost training and recursive forecasting;
+- risk escalation;
+- forecast-service integration;
+- JSON and PostgreSQL URL behavior;
+- internal expert-system trace;
+- local RAG retrieval;
+- JSON memory;
+- token accounting and reset;
+- Grok, Groq and Gemini response parsing with mocks;
+- internal X-Decision orchestration;
+- Flask operational endpoints.
+
+Live EIA, xAI, Groq, Gemini and Railway PostgreSQL integration tests require user-supplied credentials and are not run in the offline unit suite.
+
+---
+
+## Production roadmap
+
+```text
+Completed MVP-3
+Streamlit + Flask + three-source adapters + XGBoost
++ expert rules + local RAG + JSON memory
++ Grok/Groq/Gemini switch + token meter
+        ↓
+Stage 4
+Real weather, generation, interchange and outage feeds
++ calibrated forecast intervals
+        ↓
+Stage 5
+PostgreSQL memory/token audit + authentication + immutable event history
+        ↓
+Stage 6
+Background ingestion/retraining + model registry + drift monitoring
+        ↓
+Stage 7
+Multiple replicas + shared cache/queue + centralized observability
+```
+
+### Completed
+
+- working Streamlit and Flask application;
+- three data-source modes;
+- Kaggle CSV/ZIP adapter and quality controls;
+- canonical hourly schema and source profile;
+- forecasting and baseline evaluation;
+- scenario and risk workflow;
+- X-Decision expert rules;
+- local RAG;
+- JSON-backed memory;
+- provider switching;
+- provider-response token ledger and reset;
+- human approval and decision audit;
+- optional PostgreSQL decision persistence.
+
+### Next
+
+- live Railway validation with PostgreSQL and selected provider keys;
+- real EIA deployment verification;
+- real Kaggle multiyear benchmark results;
+- weather connector;
+- expanded grid policy corpus;
+- screenshot capture and public case study.
+
+### Planned
+
+- calibrated prediction intervals;
+- ISO-NE market/outage integration;
+- normalized multi-region training mode;
+- role-based authentication;
+- PostgreSQL-backed shared memory and token audit;
+- model registry and drift monitoring;
+- background jobs and horizontal scaling.
+
+---
+
+## Limitations and safety
+
+- GridGuard is not a certified energy-management or grid-control system.
+- Synthetic data is representative and not an ISO-NE replica.
+- Kaggle files may cover different PJM regions and time conventions.
+- Kaggle and EIA use a labelled seasonal temperature proxy when observed weather is unavailable.
+- The MVP trains on one selected source at a time.
+- Recursive forecasts can accumulate error.
+- Point forecasts do not express calibrated uncertainty.
+- Feature importance is not causal explanation.
+- TF-IDF RAG is lightweight and may miss semantically related language.
+- LLM output can be inaccurate even when grounded.
+- Token counters are local observations, not provider billing records.
+- Reset buttons do not restore provider quota or credits.
+- No recommendation is executed automatically.
+- Human review is mandatory.
 
 ---
 
@@ -1029,7 +1244,9 @@ MIT License. See `LICENSE`.
 
 ---
 
-## Voice Escalation & CALL-E Integration
+## Voice Escalation & CALL-E Integration (Major Extension)
+
+The CALL-E Voice Escalation Agent is a **major extension** built on top of the original GridGuard forecasting and governance foundation. It transforms GridGuard from a passive decision-support dashboard into an active, outbound escalation agent while strictly preserving human-in-the-loop governance. 
 
 GridGuard includes a polished **Voice Escalation** tab designed to draft, verify, and execute automated outbound calls via CALL-E when grid risk is elevated or critical.
 
@@ -1058,9 +1275,10 @@ GridGuard acts as **decision support only**.
 - A second explicit confirmation checkbox is strictly required to execute the live call.
 - The UI forces the recipient number to be masked and displays an explicit AI disclosure.
 
-### Architecture & Runtime Integration
+### How CALL-E is Integrated
 When live calls are enabled and confirmed, the application uses the official `calle` Python SDK (`from calle import CalleClient`) at runtime:
 - The system calls `dispatch_escalation()` in `backend/call_e_integration.py`.
-- It instantiates the `CalleClient` and executes `client.calls.create_and_wait(...)` synchronously.
-- It provides a `result_schema` to instruct CALL-E to return structured JSON data.
-- It fetches the structured outcome (acknowledgement, availability, ETA, transcript summary) and timestamps the decision in the audit log.
+- It instantiates the `CalleClient` and executes `client.calls.create(...)` to create the one-recipient task.
+- It executes `client.calls.wait_for_result(...)` to synchronously retrieve the outcome.
+- It provides a `result_schema` and `recipient_result_schema` to instruct CALL-E to return structured JSON data.
+- It parses the completed status, fetches the structured outcome (acknowledgement, availability, ETA, escalation status) and transcript summary, and packages it into the escalation packet.

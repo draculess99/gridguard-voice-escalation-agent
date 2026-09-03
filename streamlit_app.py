@@ -357,14 +357,14 @@ data_profile = st.session_state.data_profile or build_data_profile(bundle.histor
 risk = package["risk"]
 forecast = package["forecast"]
 
-st.markdown('<div class="gg-title">⚡ GridGuard AI</div>', unsafe_allow_html=True)
+st.markdown('<div class="gg-title">⚡ GridGuard Voice Escalation Agent</div>', unsafe_allow_html=True)
 st.markdown(
-    '<div class="gg-subtitle">XGBoost forecasting, X-Decision intelligence, RAG-grounded explanations, and human-approved demand response</div>',
+    '<div class="gg-subtitle">Automated outbound calls via CALL-E, driven by XGBoost forecasting and human-approved demand response</div>',
     unsafe_allow_html=True,
 )
 
-tab_control, tab_intelligence, tab_scenario, tab_model, tab_audit, tab_committee, tab_data, tab_escalation = st.tabs(
-    ["Control Tower", "X-Decision & RAG", "Scenario Lab", "Model Quality", "Audit & Operations", "Committee Transcript", "Data Sources", "Voice Escalation"]
+tab_escalation, tab_control, tab_intelligence, tab_scenario, tab_model, tab_audit, tab_committee, tab_data = st.tabs(
+    ["Voice Escalation", "Forecast Evidence", "X-Decision & RAG", "Scenario Lab", "Model Quality", "Audit & Operations", "Committee Transcript", "Data Sources"]
 )
 
 with tab_control:
@@ -873,58 +873,66 @@ EIA hourly API ─────┘""",
 with tab_escalation:
     st.subheader("Automated Voice Escalation via CALL-E")
     
+    # Lifecycle Visualization
+    st.markdown("##### 🔄 Escalation Lifecycle")
     st.markdown(
         """
-        > [!IMPORTANT]
-        > **Decision Support Only**
-        > This agent never controls grid infrastructure, makes emergency decisions on its own, or autonomously contacts real utilities or customers without explicit human initiation and second-level consent.
+        `Risk detected` ➔ `Human review` ➔ `CALL-E plan` ➔ `Explicit approval` ➔ `Call result` ➔ `Escalation packet`
         """
     )
+    st.divider()
     
     # Check trigger condition
     if risk["level"] in ["CRITICAL", "ELEVATED"]:
         st.warning(f"High-risk forecast detected ({risk['level']}). A draft voice escalation has been prepared.")
-        
-        # Disclaimer & Consent
-        st.info("⚠️ **AI Disclosure**: This call will be placed by an AI voice agent (CALL-E). The recipient will be informed they are speaking with an AI.")
         
         c1, c2 = st.columns([2, 1])
         with c1:
             st.text_input("Recipient Phone Number", value="***-***-8492", disabled=True, help="Masked for security")
             
         goal = st.text_area(
-            "Call Goal / Dry-run preview", 
+            "Call Goal", 
             value=f"Grid risk level is {risk['level']} with peak of {risk['peak_mw']:,.0f} MW. Requesting emergency response availability.", 
             height=80
         )
         
-        dry_run_toggle = st.toggle("Dry-run preview (Default)", value=True)
-        live_mode = not dry_run_toggle
-        if live_mode:
-            st.error("🚨 LIVE MODE: This will place a real disclosed test call to +15550100000.")
-        
-        consent_draft = st.checkbox("I verify the call details and consent to drafting this voice escalation.")
-        
-        if consent_draft:
-            st.success("Draft prepared. Awaiting final confirmation to dispatch.")
+        # Safety Panel
+        with st.container(border=True):
+            st.markdown("#### 🛡️ Live-Call Safety Panel")
+            st.info("⚠️ **AI Disclosure**: This call will be placed by an AI voice agent (CALL-E). The recipient will be informed they are speaking with an AI.")
             
-            st.markdown("### Second Human Confirmation Required")
-            consent_dispatch = st.checkbox("I confirm I want to place this call.")
+            st.markdown(
+                """
+                > [!IMPORTANT]
+                > **Decision Support Only**
+                > This agent never controls grid infrastructure, makes emergency decisions on its own, or autonomously contacts real utilities or customers without explicit human initiation and second-level consent.
+                """
+            )
             
-            button_label = "Place real disclosed test call" if live_mode else "Run Dry-Run Preview"
+            dry_run_toggle = st.toggle("Dry-run preview (Default)", value=True)
+            live_mode = not dry_run_toggle
+            if live_mode:
+                st.error("🚨 LIVE MODE: This will place a real disclosed test call to +15550100000.")
             
-            if st.button(button_label, type="primary", disabled=not consent_dispatch):
-                try:
-                    with st.spinner("Dispatching call via CALL-E SDK..."):
-                        final_res = dispatch_escalation(goal, test_number="+15550100000", dry_run=not live_mode)
+            consent_draft = st.checkbox("1️⃣ I verify the call details and consent to drafting this voice escalation.")
+            
+            if consent_draft:
+                st.success("Draft prepared. Awaiting final confirmation to dispatch.")
+                consent_dispatch = st.checkbox("2️⃣ I confirm I want to place this call.")
+                
+                button_label = "Place real disclosed test call" if live_mode else "Run Dry-Run Preview"
+                if st.button(button_label, type="primary", disabled=not consent_dispatch):
+                    try:
+                        with st.spinner("Dispatching call via CALL-E SDK..."):
+                            final_res = dispatch_escalation(goal, test_number="+15550100000", dry_run=not live_mode)
+                            
+                        st.success("Escalation Complete")
+                        st.json(final_res)
                         
-                    st.success("Escalation Complete")
-                    st.json(final_res)
-                    
-                except Exception as e:
-                    st.error(f"Failed to execute call: {str(e)}")
-        else:
-            st.warning("Please check the consent box to proceed with drafting the call.")
+                    except Exception as e:
+                        st.error(f"Failed to execute call: {str(e)}")
+            else:
+                st.warning("Please check the consent box to proceed with drafting the call.")
             
     else:
         st.success(f"Current grid risk is {risk['level']}. No automated escalation is required at this time.")
