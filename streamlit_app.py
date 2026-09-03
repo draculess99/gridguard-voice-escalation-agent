@@ -912,7 +912,12 @@ with tab_escalation:
             
             if consent_draft:
                 st.success("Draft prepared. Awaiting final confirmation to dispatch.")
-                consent_dispatch = st.checkbox("2️⃣ I confirm I want to place this call.")
+                
+                confirm_label = (
+                    "2️⃣ I confirm I want to place this real disclosed test call." if live_mode
+                    else "2️⃣ I confirm I want to run the dry-run escalation preview. No call will be placed."
+                )
+                consent_dispatch = st.checkbox(confirm_label)
                 
                 button_label = "Place real disclosed test call" if live_mode else "Run Dry-Run Preview"
                 if st.button(button_label, type="primary", disabled=not consent_dispatch):
