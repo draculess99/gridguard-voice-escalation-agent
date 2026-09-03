@@ -1,6 +1,6 @@
-# GridGuard AI
+# GridGuard Voice Escalation Agent
 
-**Explainable Grid Forecasting and Human-Governed Decision Intelligence**
+**Explainable grid forecasting with approval-gated, disclosed CALL-E voice escalation.**
 
 [![Streamlit](https://img.shields.io/badge/UI-Streamlit-FF4B4B)](#streamlit-interface)
 [![Flask](https://img.shields.io/badge/API-Flask-000000)](#flask-api)
@@ -10,29 +10,11 @@
 [![PostgreSQL](https://img.shields.io/badge/Persistence-PostgreSQL-336791)](#persistence)
 [![Railway](https://img.shields.io/badge/Deploy-Railway-0B0D0E)](#railway-deployment)
 
-GridGuard AI is a portfolio-ready decision-support application that forecasts the next **12–48 hours** of electricity demand, identifies peak-risk periods, explains the evidence behind a recommendation, and requires a human operator to approve or reject the proposed response.
+GridGuard Voice Escalation Agent uses an XGBoost machine-learning pipeline to forecast electricity demand and identify critical grid risks. When a high-risk hour is detected, the internal expert system grounds the alert in local policy using RAG and presents a recommended escalation path.
 
-> [!NOTE]
-> **Community Contribution**
-> The Voice Escalation extension of this project was submitted to the [CALLE-AI/awesome-phone-call-agents](https://github.com/CALLE-AI/awesome-phone-call-agents) community repository. This was done to demonstrate how to build a highly constrained, human-in-the-loop voice agent that prioritizes safety (using explicit consent gates and a dry-run default) over fully autonomous execution. It serves as a public portfolio piece and a reference pattern for responsible AI agent design.
+The human operator reviews the evidence and must explicitly approve any action. If approved, the official CALL-E Python SDK creates and waits for a structured call result.
 
-The application can ingest and normalize three different data-source types:
-
-1. **Synthetic Demo** — reproducible offline data and controlled stress scenarios.
-2. **Kaggle Historical** — uploaded or locally configured CSV/ZIP data for multiyear training and backtesting.
-3. **EIA Live** — recent hourly balancing-authority demand retrieved through the EIA API.
-
-All three source adapters produce the same canonical hourly schema before feature engineering, model training, risk assessment, RAG retrieval, and X-Decision reasoning.
-
-The numerical forecast and decision explanation are intentionally separated:
-
-- **XGBoost** predicts future demand.
-- A deterministic **internal expert system** converts forecast conditions into transparent operational rules.
-- **Local RAG** retrieves relevant policy and governance material.
-- Optional **Groq, or Gemini** providers turn grounded evidence into an operator briefing.
-- A human operator remains responsible for every recorded decision.
-
-> GridGuard is an operational analytics demonstration. It does not autonomously control generation, transmission, customer load, or critical infrastructure.
+By default, the application runs in a safe dry-run preview mode. No real call is made in the public demo, ensuring the agent remains a safe, verifiable reference pattern for human-in-the-loop escalation.
 
 ---
 
@@ -44,13 +26,75 @@ The numerical forecast and decision explanation are intentionally separated:
 - **GitHub Repository:** https://github.com/draculess99/gridguard-voice-escalation-agent
 - **LinkedIn:** https://www.linkedin.com/in/gammaconsult/
 - **Portfolio:** https://draculess99.github.io/
+- **CALL-E community PR:** https://github.com/CALLE-AI/awesome-phone-call-agents/pull/301
+
+---
+
+## Voice Escalation & CALL-E Integration (Major Extension)
+
+The CALL-E Voice Escalation Agent is a **major extension** built on top of the original GridGuard forecasting and governance foundation. It transforms GridGuard from a passive decision-support dashboard into an active, outbound escalation agent while strictly preserving human-in-the-loop governance. 
+
+GridGuard includes a polished **Voice Escalation** tab designed to draft, verify, and execute automated outbound calls via CALL-E when grid risk is elevated or critical.
+
+### CALL-E Setup
+
+To use the live CALL-E service, you must configure the application with your API key via the `.env` file. No separate CLI or local server is required because the application uses the genuine `calle` Python SDK.
+
+1. Ensure the `calle-ai` package is installed (`pip install -r requirements.txt`).
+2. Add your API key to `.env`:
+   ```env
+   CALLE_API_KEY=your_real_api_key_here
+   ```
+
+> [!CAUTION]
+> **Safety Controls & Dry-Run Mode**
+> By default, the application runs in **Dry-run preview mode**. In this mode, no real calls are placed. Instead, the application mocks the interaction with the CALL-E agent and parses synthetic response payloads (fixture data). This ensures that developers and operators can safely test the escalation workflow without accidentally triggering outbound calls.
+> 
+> Furthermore, even when Live Mode is toggled on, the application is **strictly hardcoded** to only dispatch calls to the authorized test number: `+15550100000`.
+
+### Consent & Safety
+GridGuard acts as **decision support only**.
+- It **never** controls grid infrastructure.
+- It **never** makes emergency decisions independently.
+- It **never** autonomously contacts real utilities or customers without human approval.
+- A draft escalation requires explicit boolean consent from the operator.
+- A second explicit confirmation checkbox is strictly required to execute the live call.
+- The UI forces the recipient number to be masked and displays an explicit AI disclosure.
+
+### How CALL-E is Integrated
+When live calls are enabled and confirmed, the application uses the official `calle` Python SDK (`from calle import CalleClient`) at runtime:
+- The system calls `dispatch_escalation()` in `backend/call_e_integration.py`.
+- It instantiates the `CalleClient` and executes `client.calls.create(...)` to create the one-recipient task.
+- It executes `client.calls.wait_for_result(...)` to synchronously retrieve the outcome.
+- It provides a `result_schema` and `recipient_result_schema` to instruct CALL-E to return structured JSON data.
+- It parses the completed status, fetches the structured outcome (acknowledgement, availability, ETA, escalation status) and transcript summary, and packages it into the escalation packet.
 
 ---
 
 ## Product walkthrough
 
+*Screens 05–07 demonstrate dry-run preview. No real phone call was placed.*
+
 | Control Tower & Forecast | Multi-Agent Debate Committee |
 |:---:|:---:|
+| ![Control Tower](docs/images/01_control_tower.png)<br><sub>**01 Forecast Evidence** — critical forecast and operator decision.</sub> | ![Debate Committee](docs/images/02_debate_committee.png)<br><sub>**02 Committee Transcript** — analyst, compliance, and dispatcher reasoning is advisory and traceable.</sub> |
+
+| Scenario Lab Stress Testing | Architecture & Data Sources |
+|:---:|:---:|
+| ![Scenario Lab](docs/images/03_scenario_lab.png)<br><sub>**03 Scenario Lab** — reproducible extreme-grid-stress simulation.</sub> | ![Data Sources](docs/images/04_data_sources.png)<br><sub>**04 Data Sources** — Synthetic, Kaggle, and EIA data normalized to one schema.</sub> |
+
+| Voice Escalation Overview | Safety Gates & Consent |
+|:---:|:---:|
+| ![Voice Escalation](docs/images/05_voice_escalation_overview.png)<br><sub>**05 Voice Escalation** — critical risk produces a draft, not an automatic call.</sub> | ![Safety Gates](docs/images/06_voice_escalation_safety_gates.png)<br><sub>**06 Safety Gates** — disclosure, dry-run default, and two confirmations.</sub> |
+
+| Escalation Result Packet | CALL-E Architecture |
+|:---:|:---:|
+| ![Dry Run Result](docs/images/07_dry_run_escalation_result.png)<br><sub>**07 Dry-Run Result** — structured escalation packet; no real call placed.</sub> | ![CALL-E Architecture](docs/images/08_call_e_architecture.png)<br><sub>**08 CALL-E Architecture** — risk → human approval → CALL-E SDK/API → structured audit packet.</sub> |
+
+![Public Deployment](docs/images/09_public_railway_deployment.png)
+<br><sub>**09 Public Railway Deployment** — public Railway URL proves the reviewer-accessible app is live.</sub>
+
+---:|:---:|
 | ![Control Tower](docs/images/01_control_tower.png)<br><sub>The main X-Decision dashboard with XGBoost forecast, risk signals, and the local RAG policy context.</sub> | ![Debate Committee](docs/images/02_debate_committee.png)<br><sub>The transcript tab showing the Analyst, Compliance, and Dispatcher agents reasoning over the evidence.</sub> |
 
 | Scenario Lab Stress Testing | Architecture & Data Sources |
@@ -76,6 +120,8 @@ The numerical forecast and decision explanation are intentionally separated:
 | Area | Feature | Status |
 |---|---|---|
 | UI | Streamlit grid-operations control tower | Completed |
+| Voice | Approval-gated CALL-E voice escalation with dry-run default | Completed |
+
 | API | Flask/Waitress health, readiness, data-source, audit, memory and token endpoints | Completed |
 | Data | Three-way source switch: Synthetic / Kaggle / EIA | Completed |
 | Data | Synthetic ISO New England-style hourly generator | Completed |
@@ -144,6 +190,9 @@ flowchart TD
 
 > **Note:** Dry-run is the default. Live calls require an authorized recipient, AI disclosure, and two explicit human confirmations.
 
+<details>
+<summary>Full platform architecture (optional detail)</summary>
+
 ### Detailed component view
 
 ```mermaid
@@ -197,6 +246,8 @@ flowchart LR
     GEM --> TOK
 ```
 
+</details>
+
 ---
 
 ## End-to-end data flow
@@ -246,7 +297,7 @@ sequenceDiagram
 
 ---
 
-# Three-source data architecture
+## Three-source data architecture
 
 The data-source dropdown is displayed prominently in the Streamlit sidebar. A dedicated **Data Sources** tab shows all three inbound sources, identifies the active source, reports whether each source is ready, and displays the active source's quality profile. It also allows operators to export both the historical training data and the generated forward forecast directly as CSV files for offline analysis.
 
@@ -1082,186 +1133,6 @@ The Streamlit and Flask components remain in one Railway service for the MVP. Po
 
 ---
 
-## Project structure
-
-```text
-gridguard_ai_mvp/
-├── streamlit_app.py
-├── run.py
-├── backend/
-│   ├── api.py
-│   ├── config.py
-│   ├── data.py
-│   ├── features.py
-│   ├── modeling.py
-│   ├── risk.py
-│   ├── service.py
-│   ├── expert_system.py
-│   ├── decision_intelligence.py
-│   ├── llm_providers.py
-│   ├── rag.py
-│   ├── memory.py
-│   ├── token_meter.py
-│   └── persistence.py
-├── data/
-│   ├── kaggle/
-│   │   └── README.md
-│   └── runtime/
-├── docs/
-│   ├── images/
-│   └── rag/
-│       ├── grid_operations_playbook.md
-│       ├── demand_response_policy.md
-│       └── model_governance.md
-├── tests/
-├── Dockerfile
-├── railway.toml
-├── requirements.txt
-└── .env.example
-```
-
----
-
-## Screenshots for the portfolio
-
-Store screenshots under `docs/images/`:
-
-```text
-docs/images/
-├── control_tower.png
-├── three_data_sources.png
-├── kaggle_adapter.png
-├── x_decision_rag.png
-├── provider_token_meter.png
-├── scenario_lab.png
-├── model_quality.png
-└── audit_operations.png
-```
-
-Recommended captures:
-
-1. Control Tower with active source and 24-hour forecast.
-2. Data Sources tab showing Synthetic, Kaggle and EIA inputs.
-3. Kaggle upload with detected timestamp and regional MW series.
-4. X-Decision briefing using the internal expert system.
-5. RAG source chunks and fired-rule trace.
-6. Groq, Grok or Gemini provider switch and token meter.
-7. Heatwave plus generator-outage scenario.
-8. XGBoost versus seasonal-naive holdout results.
-9. PostgreSQL readiness and decision audit on Railway.
-
----
-
-## Testing
-
-```bash
-pytest -q
-```
-
-The suite covers:
-
-- synthetic demand generation;
-- canonical schema construction;
-- Kaggle PJM-style column detection;
-- Kaggle CSV normalization;
-- Kaggle ZIP selection;
-- missing-hour interpolation and error behavior;
-- three-source catalog and API endpoint;
-- feature engineering;
-- XGBoost training and recursive forecasting;
-- risk escalation;
-- forecast-service integration;
-- JSON and PostgreSQL URL behavior;
-- internal expert-system trace;
-- local RAG retrieval;
-- JSON memory;
-- token accounting and reset;
-- Grok, Groq and Gemini response parsing with mocks;
-- internal X-Decision orchestration;
-- Flask operational endpoints.
-
-Live EIA, xAI, Groq, Gemini and Railway PostgreSQL integration tests require user-supplied credentials and are not run in the offline unit suite.
-
----
-
-## Production roadmap
-
-```text
-Completed MVP-3
-Streamlit + Flask + three-source adapters + XGBoost
-+ expert rules + local RAG + JSON memory
-+ Grok/Groq/Gemini switch + token meter
-        ↓
-Stage 4
-Real weather, generation, interchange and outage feeds
-+ calibrated forecast intervals
-        ↓
-Stage 5
-PostgreSQL memory/token audit + authentication + immutable event history
-        ↓
-Stage 6
-Background ingestion/retraining + model registry + drift monitoring
-        ↓
-Stage 7
-Multiple replicas + shared cache/queue + centralized observability
-```
-
-### Completed
-
-- working Streamlit and Flask application;
-- three data-source modes;
-- Kaggle CSV/ZIP adapter and quality controls;
-- canonical hourly schema and source profile;
-- forecasting and baseline evaluation;
-- scenario and risk workflow;
-- X-Decision expert rules;
-- local RAG;
-- JSON-backed memory;
-- provider switching;
-- provider-response token ledger and reset;
-- human approval and decision audit;
-- optional PostgreSQL decision persistence.
-
-### Next
-
-- live Railway validation with PostgreSQL and selected provider keys;
-- real EIA deployment verification;
-- real Kaggle multiyear benchmark results;
-- weather connector;
-- expanded grid policy corpus;
-- screenshot capture and public case study.
-
-### Planned
-
-- calibrated prediction intervals;
-- ISO-NE market/outage integration;
-- normalized multi-region training mode;
-- role-based authentication;
-- PostgreSQL-backed shared memory and token audit;
-- model registry and drift monitoring;
-- background jobs and horizontal scaling.
-
----
-
-## Limitations and safety
-
-- GridGuard is not a certified energy-management or grid-control system.
-- Synthetic data is representative and not an ISO-NE replica.
-- Kaggle files may cover different PJM regions and time conventions.
-- Kaggle and EIA use a labelled seasonal temperature proxy when observed weather is unavailable.
-- The MVP trains on one selected source at a time.
-- Recursive forecasts can accumulate error.
-- Point forecasts do not express calibrated uncertainty.
-- Feature importance is not causal explanation.
-- TF-IDF RAG is lightweight and may miss semantically related language.
-- LLM output can be inaccurate even when grounded.
-- Token counters are local observations, not provider billing records.
-- Reset buttons do not restore provider quota or credits.
-- No recommendation is executed automatically.
-- Human review is mandatory.
-
----
-
 ## ⚠️ Disclaimer & Trademark Notice
 
 **This is an open-source, educational capstone project and technical portfolio piece.** 
@@ -1273,44 +1144,5 @@ It is **not** a commercial product, is **not** intended for commercial use, and 
 
 MIT License. See `LICENSE`.
 
-
 ---
 
-## Voice Escalation & CALL-E Integration (Major Extension)
-
-The CALL-E Voice Escalation Agent is a **major extension** built on top of the original GridGuard forecasting and governance foundation. It transforms GridGuard from a passive decision-support dashboard into an active, outbound escalation agent while strictly preserving human-in-the-loop governance. 
-
-GridGuard includes a polished **Voice Escalation** tab designed to draft, verify, and execute automated outbound calls via CALL-E when grid risk is elevated or critical.
-
-### CALL-E Setup
-
-To use the live CALL-E service, you must configure the application with your API key via the `.env` file. No separate CLI or local server is required because the application uses the genuine `calle` Python SDK.
-
-1. Ensure the `calle-ai` package is installed (`pip install -r requirements.txt`).
-2. Add your API key to `.env`:
-   ```env
-   CALLE_API_KEY=your_real_api_key_here
-   ```
-
-> [!CAUTION]
-> **Safety Controls & Dry-Run Mode**
-> By default, the application runs in **Dry-run preview mode**. In this mode, no real calls are placed. Instead, the application mocks the interaction with the CALL-E agent and parses synthetic response payloads (fixture data). This ensures that developers and operators can safely test the escalation workflow without accidentally triggering outbound calls.
-> 
-> Furthermore, even when Live Mode is toggled on, the application is **strictly hardcoded** to only dispatch calls to the authorized test number: `+15550100000`.
-
-### Consent & Safety
-GridGuard acts as **decision support only**.
-- It **never** controls grid infrastructure.
-- It **never** makes emergency decisions independently.
-- It **never** autonomously contacts real utilities or customers without human approval.
-- A draft escalation requires explicit boolean consent from the operator.
-- A second explicit confirmation checkbox is strictly required to execute the live call.
-- The UI forces the recipient number to be masked and displays an explicit AI disclosure.
-
-### How CALL-E is Integrated
-When live calls are enabled and confirmed, the application uses the official `calle` Python SDK (`from calle import CalleClient`) at runtime:
-- The system calls `dispatch_escalation()` in `backend/call_e_integration.py`.
-- It instantiates the `CalleClient` and executes `client.calls.create(...)` to create the one-recipient task.
-- It executes `client.calls.wait_for_result(...)` to synchronously retrieve the outcome.
-- It provides a `result_schema` and `recipient_result_schema` to instruct CALL-E to return structured JSON data.
-- It parses the completed status, fetches the structured outcome (acknowledgement, availability, ETA, escalation status) and transcript summary, and packages it into the escalation packet.
