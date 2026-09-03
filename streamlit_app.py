@@ -359,7 +359,7 @@ forecast = package["forecast"]
 
 st.markdown('<div class="gg-title">⚡ GridGuard Voice Escalation Agent</div>', unsafe_allow_html=True)
 st.markdown(
-    '<div class="gg-subtitle">Automated outbound calls via CALL-E, driven by XGBoost forecasting and human-approved demand response</div>',
+    '<div class="gg-subtitle">Approval-gated, disclosed CALL-E escalation calls informed by XGBoost forecasting and human-reviewed evidence</div>',
     unsafe_allow_html=True,
 )
 
@@ -871,7 +871,7 @@ EIA hourly API ─────┘""",
     )
 
 with tab_escalation:
-    st.subheader("Automated Voice Escalation via CALL-E")
+    st.subheader("Approval-Gated Voice Escalation via CALL-E")
     
     # Lifecycle Visualization
     st.markdown("##### 🔄 Escalation Lifecycle")
