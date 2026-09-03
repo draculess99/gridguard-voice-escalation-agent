@@ -463,28 +463,31 @@ with tab_intelligence:
 
     generate_clicked = st.button("Generate X-Decision briefing", type="primary")
     if generate_clicked:
-        try:
-            active_provider = "debate_committee" if use_debate else decision_provider
-            spinner_text = "The AI Debate Committee is currently in session..." if use_debate else f"Running {provider_labels[decision_provider]} with local RAG..."
-            with st.spinner(spinner_text):
-                result = run_decision_intelligence(
-                    provider=active_provider,
-                    model=selected_model,
-                    risk=risk,
-                    model_metrics=bundle.metrics,
-                    scenario=st.session_state.scenario,
-                    operator_question=operator_question,
-                    rag=rag,
-                    memory=memory,
-                    meter=meter,
-                    max_completion_tokens=max_completion_tokens,
-                )
-                st.session_state.last_decision_intelligence = result
-            st.rerun()
-        except ProviderError as exc:
-            st.error(str(exc))
-        except Exception as exc:
-            st.exception(exc)
+        if decision_provider != "internal_expert_system" and not provider_configured(decision_provider):
+            st.error(f"Cannot generate briefing: The API key for {provider_labels[decision_provider]} is not configured.")
+        else:
+            try:
+                active_provider = "debate_committee" if use_debate else decision_provider
+                spinner_text = "The AI Debate Committee is currently in session..." if use_debate else f"Running {provider_labels[decision_provider]} with local RAG..."
+                with st.spinner(spinner_text):
+                    result = run_decision_intelligence(
+                        provider=active_provider,
+                        model=selected_model,
+                        risk=risk,
+                        model_metrics=bundle.metrics,
+                        scenario=st.session_state.scenario,
+                        operator_question=operator_question,
+                        rag=rag,
+                        memory=memory,
+                        meter=meter,
+                        max_completion_tokens=max_completion_tokens,
+                    )
+                    st.session_state.last_decision_intelligence = result
+                st.rerun()
+            except ProviderError as exc:
+                st.error(str(exc))
+            except Exception as exc:
+                st.exception(exc)
 
     result = st.session_state.last_decision_intelligence
     if result:
