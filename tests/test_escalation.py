@@ -65,8 +65,11 @@ def test_live_mode_successful_call(mock_calle_client):
     
     # Verify the goal is the safe live goal, NOT the critical risk string
     assert "Critical Risk" not in call_kwargs["task"]
-    assert "emergency" not in call_kwargs["task"].lower() or "not an emergency" in call_kwargs["task"].lower()
+    assert "critical" not in call_kwargs["task"].lower()
+    assert "availability" not in call_kwargs["task"].lower()
+    assert "not an emergency" in call_kwargs["task"].lower()
     assert "This is a disclosed GridGuard demonstration call" in call_kwargs["task"]
+    assert "test acknowledgement received" in call_kwargs["task"]
     
     assert call_kwargs["recipients"][0]["phones"] == ["+15550199999"]
     assert "idempotency_key" in call_kwargs

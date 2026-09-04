@@ -47,7 +47,7 @@ def dispatch_escalation(goal: str, dry_run: bool = True) -> dict:
 
     # 4. Use CalleClient and create
     try:
-        live_goal = "This is a disclosed GridGuard demonstration call to an authorized test recipient. This is not an emergency and no operational action is requested. Please confirm that you received this test call and say 'test acknowledgement received.'"
+        live_goal = "This is a disclosed GridGuard demonstration call to an authorized test recipient. This is not an emergency. No grid action, dispatch, emergency response, or operational decision is requested. Please confirm that you received this test call and say 'test acknowledgement received.'"
         
         schema = {
             "type": "object",
