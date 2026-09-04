@@ -945,12 +945,16 @@ with tab_escalation:
                                 dry_run=not live_mode,
                                 idempotency_key=st.session_state.current_idempotency_key
                             )
-                            
-                        st.success("Escalation Complete")
-                        if not live_mode:
-                            st.info("### Dry-run fixture result — no real phone call was placed.")
-                        st.json(final_res)
-                        
+                        if final_res.get("status") == "failed":
+                            st.error("🚨 Call did not complete successfully.")
+                            with st.expander("CALL-E diagnostic details"):
+                                st.warning("No additional call will be attempted automatically.")
+                                st.json(final_res)
+                        else:
+                            st.success("Escalation Complete")
+                            if not live_mode:
+                                st.info("### Dry-run fixture result — no real phone call was placed.")
+                            st.json(final_res)
                     except Exception as e:
                         st.error(f"Failed to execute call: {str(e)}")
                     finally:

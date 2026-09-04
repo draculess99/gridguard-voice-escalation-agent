@@ -46,6 +46,7 @@ def dispatch_escalation(goal: str, dry_run: bool = True, idempotency_key: str | 
         idempotency_key = str(uuid.uuid4())
 
     # 4. Use CalleClient and create
+    created = None
     try:
         live_goal = "This is a disclosed GridGuard demonstration call to an authorized test recipient. This is not an emergency. No grid action, dispatch, emergency response, or operational decision is requested. Please confirm that you received this test call and say 'test acknowledgement received.'"
         
@@ -77,7 +78,16 @@ def dispatch_escalation(goal: str, dry_run: bool = True, idempotency_key: str | 
         
         # 5. Parse the result and fail closed on non-terminal
         if completed.get("status") != "completed":
-            raise RuntimeError(f"Call did not complete successfully. Status: {completed.get('status')}")
+            return {
+                "status": "failed",
+                "call_id": completed.get("id", created.get("id")),
+                "failure_reason": completed.get("error", "Unknown non-terminal status"),
+                "error_code": completed.get("error_code"),
+                "message": completed.get("message", f"Status: {completed.get('status')}"),
+                "created_at": completed.get("created_at"),
+                "updated_at": completed.get("updated_at"),
+                "creation_succeeded": True
+            }
 
         # The attempt results contain the structured data
         attempts = completed.get("attempts", [])
@@ -96,4 +106,14 @@ def dispatch_escalation(goal: str, dry_run: bool = True, idempotency_key: str | 
             "transcript_summary": last_attempt.get("transcript_summary", "")
         }
     except Exception as e:
-        raise RuntimeError(f"CALL-E SDK Error: {str(e)}")
+        diag = {
+            "status": "failed",
+            "creation_succeeded": created is not None,
+            "failure_reason": type(e).__name__,
+            "message": str(e)
+        }
+        if created:
+            diag["call_id"] = created.get("id")
+            diag["created_at"] = created.get("created_at")
+            diag["updated_at"] = created.get("updated_at")
+        return diag

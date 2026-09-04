@@ -100,3 +100,50 @@ def test_idempotency_keys_are_unique_per_call(mock_calle_client):
     key2 = call2_kwargs["idempotency_key"]
     
     assert key1 != key2, "Idempotency keys must be unique per live dispatch attempt."
+
+@patch("backend.call_e_integration.CalleClient")
+@patch.dict("os.environ", {"CALLE_API_KEY": "fake_key", "CALLE_AUTHORIZED_TEST_NUMBER": "+15550199999"})
+def test_live_mode_task_creation_failure(mock_calle_client):
+    """Test safe diagnostic output when task creation fails."""
+    mock_client = MagicMock()
+    mock_calle_client.return_value = mock_client
+    
+    # Simulate SDK raising an exception on create
+    mock_client.calls.create.side_effect = Exception("API rate limit exceeded")
+    
+    res = dispatch_escalation(goal="Critical Risk", dry_run=False)
+    
+    assert res["status"] == "failed"
+    assert res["creation_succeeded"] is False
+    assert res["failure_reason"] == "Exception"
+    assert "API rate limit exceeded" in res["message"]
+    # Ensure secrets/numbers aren't leaked in diagnostic wrapper
+    assert "fake_key" not in str(res)
+    assert "+15550199999" not in str(res)
+
+@patch("backend.call_e_integration.CalleClient")
+@patch.dict("os.environ", {"CALLE_API_KEY": "fake_key", "CALLE_AUTHORIZED_TEST_NUMBER": "+15550199999"})
+def test_live_mode_task_wait_failure(mock_calle_client):
+    """Test safe diagnostic output when a created task fails in wait_for_result."""
+    mock_client = MagicMock()
+    mock_calle_client.return_value = mock_client
+    
+    mock_client.calls.create.return_value = {"id": "call_123", "created_at": "2026-09-03"}
+    
+    mock_client.calls.wait_for_result.return_value = {
+        "status": "failed",
+        "error": "Recipient blocked",
+        "error_code": 403,
+        "message": "Call blocked by recipient network."
+    }
+    
+    res = dispatch_escalation(goal="Critical Risk", dry_run=False)
+    
+    assert res["status"] == "failed"
+    assert res["creation_succeeded"] is True
+    assert res["call_id"] == "call_123"
+    assert res["failure_reason"] == "Recipient blocked"
+    assert res["error_code"] == 403
+    # Ensure secrets/numbers aren't leaked in diagnostic wrapper
+    assert "fake_key" not in str(res)
+    assert "+15550199999" not in str(res)
