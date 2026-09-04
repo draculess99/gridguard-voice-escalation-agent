@@ -41,12 +41,11 @@ def test_live_mode_successful_call(mock_calle_client):
         "status": "completed",
         "attempts": [
             {
-                "transcript_summary": "Real operator acknowledged.",
+                "transcript_summary": "Real operator acknowledged test.",
                 "structured_result": {
-                    "acknowledgement": True,
-                    "availability": "En Route",
-                    "eta_minutes": 30,
-                    "escalation_status": "Dispatching team"
+                    "test_acknowledged": True,
+                    "recipient_response": "test acknowledgement received",
+                    "test_completed": True
                 }
             }
         ]
@@ -55,18 +54,23 @@ def test_live_mode_successful_call(mock_calle_client):
     res = dispatch_escalation(goal="Critical Risk", dry_run=False)
     
     assert res["status"] == "escalation_completed"
-    assert res["acknowledgement"] is True
-    assert res["availability"] == "En Route"
-    assert res["eta_minutes"] == 30
+    assert res["test_acknowledged"] is True
+    assert res["recipient_response"] == "test acknowledgement received"
+    assert res["test_completed"] is True
     assert "Real operator" in res["transcript_summary"]
     
     # Verify SDK was called correctly
     mock_client.calls.create.assert_called_once()
     call_kwargs = mock_client.calls.create.call_args.kwargs
-    assert call_kwargs["task"] == "Critical Risk"
+    
+    # Verify the goal is the safe live goal, NOT the critical risk string
+    assert "Critical Risk" not in call_kwargs["task"]
+    assert "emergency" not in call_kwargs["task"].lower() or "not an emergency" in call_kwargs["task"].lower()
+    assert "This is a disclosed GridGuard demonstration call" in call_kwargs["task"]
+    
     assert call_kwargs["recipients"][0]["phones"] == ["+15550199999"]
     assert "idempotency_key" in call_kwargs
     assert call_kwargs["result_schema"]["type"] == "object"
-    assert "escalation_status" in call_kwargs["recipient_result_schema"]["properties"]
+    assert "test_acknowledged" in call_kwargs["recipient_result_schema"]["properties"]
     
     mock_client.calls.wait_for_result.assert_called_once_with("call_123")

@@ -919,6 +919,7 @@ with tab_escalation:
                     can_dispatch = False
                 else:
                     st.error("🚨 LIVE MODE: This will place a real disclosed test call to the configured authorized test recipient.")
+                    st.warning("Live demonstration call: non-emergency test only. No grid action or emergency response is requested.")
             
             consent_draft = st.checkbox("1️⃣ I verify the call details and consent to drafting this voice escalation.")
             

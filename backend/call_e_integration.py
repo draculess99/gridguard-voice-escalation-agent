@@ -47,19 +47,20 @@ def dispatch_escalation(goal: str, dry_run: bool = True) -> dict:
 
     # 4. Use CalleClient and create
     try:
+        live_goal = "This is a disclosed GridGuard demonstration call to an authorized test recipient. This is not an emergency and no operational action is requested. Please confirm that you received this test call and say 'test acknowledgement received.'"
+        
         schema = {
             "type": "object",
             "properties": {
-                "acknowledgement": {"type": "boolean"},
-                "availability": {"type": "string"},
-                "eta_minutes": {"type": "integer"},
-                "escalation_status": {"type": "string"}
+                "test_acknowledged": {"type": "boolean"},
+                "recipient_response": {"type": "string"},
+                "test_completed": {"type": "boolean"}
             },
-            "required": ["acknowledgement", "availability", "eta_minutes", "escalation_status"]
+            "required": ["test_acknowledged", "recipient_response", "test_completed"]
         }
 
         created = client.calls.create(
-            task=goal,
+            task=live_goal,
             recipients=[
                 {
                     "phones": [test_number],
@@ -89,10 +90,9 @@ def dispatch_escalation(goal: str, dry_run: bool = True) -> dict:
         return {
             "status": "escalation_completed",
             "timestamp": datetime.now(timezone.utc).isoformat(),
-            "acknowledgement": structured.get("acknowledgement", False),
-            "availability": structured.get("availability", "Unknown"),
-            "eta_minutes": structured.get("eta_minutes", None),
-            "human_approval_decision": structured.get("escalation_status", "Pending"),
+            "test_acknowledged": structured.get("test_acknowledged", False),
+            "recipient_response": structured.get("recipient_response", "Unknown"),
+            "test_completed": structured.get("test_completed", False),
             "transcript_summary": last_attempt.get("transcript_summary", "")
         }
     except Exception as e:
