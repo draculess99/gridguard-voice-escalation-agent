@@ -934,9 +934,17 @@ with tab_escalation:
                 
                 button_label = "Place real disclosed test call" if live_mode else "Run Dry-Run Preview"
                 if st.button(button_label, type="primary", disabled=not (consent_dispatch and can_dispatch)):
+                    if "current_idempotency_key" not in st.session_state:
+                        import uuid
+                        st.session_state.current_idempotency_key = str(uuid.uuid4())
+                        
                     try:
                         with st.spinner("Dispatching call via CALL-E SDK..."):
-                            final_res = dispatch_escalation(goal, dry_run=not live_mode)
+                            final_res = dispatch_escalation(
+                                goal, 
+                                dry_run=not live_mode,
+                                idempotency_key=st.session_state.current_idempotency_key
+                            )
                             
                         st.success("Escalation Complete")
                         if not live_mode:
@@ -945,6 +953,9 @@ with tab_escalation:
                         
                     except Exception as e:
                         st.error(f"Failed to execute call: {str(e)}")
+                    finally:
+                        if "current_idempotency_key" in st.session_state:
+                            del st.session_state.current_idempotency_key
             else:
                 st.warning("Please check the consent box to proceed with drafting the call.")
             

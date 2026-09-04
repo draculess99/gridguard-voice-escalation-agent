@@ -10,7 +10,7 @@ def get_calle_client() -> CalleClient | None:
         return None
     return CalleClient(api_key=api_key)
 
-def dispatch_escalation(goal: str, dry_run: bool = True) -> dict:
+def dispatch_escalation(goal: str, dry_run: bool = True, idempotency_key: str | None = None) -> dict:
     """
     Dispatches a voice escalation call via the CALL-E Python SDK.
     """
@@ -40,10 +40,10 @@ def dispatch_escalation(goal: str, dry_run: bool = True) -> dict:
     if not re.match(r'^\+[1-9]\d{1,14}$', test_number):
         raise ValueError(f"Invalid E.164 phone number configured for CALLE_AUTHORIZED_TEST_NUMBER.")
 
-    # 3. Generate a stable idempotency key (hourly stable per goal)
-    current_hour = datetime.now(timezone.utc).strftime("%Y-%m-%d-%H")
-    base_string = f"{goal}-{test_number}-{current_hour}"
-    idempotency_key = hashlib.sha256(base_string.encode('utf-8')).hexdigest()
+    # 3. Use provided idempotency key or generate a fresh UUID v4
+    import uuid
+    if not idempotency_key:
+        idempotency_key = str(uuid.uuid4())
 
     # 4. Use CalleClient and create
     try:

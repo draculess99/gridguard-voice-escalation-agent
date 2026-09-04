@@ -77,3 +77,26 @@ def test_live_mode_successful_call(mock_calle_client):
     assert "test_acknowledged" in call_kwargs["recipient_result_schema"]["properties"]
     
     mock_client.calls.wait_for_result.assert_called_once_with("call_123")
+
+@patch("backend.call_e_integration.CalleClient")
+@patch.dict("os.environ", {"CALLE_API_KEY": "fake_key", "CALLE_AUTHORIZED_TEST_NUMBER": "+15550199999"})
+def test_idempotency_keys_are_unique_per_call(mock_calle_client):
+    """Test that two separate live-dispatch attempts generate different idempotency keys."""
+    mock_client = MagicMock()
+    mock_calle_client.return_value = mock_client
+    
+    mock_client.calls.create.return_value = {"id": "call_123"}
+    mock_client.calls.wait_for_result.return_value = {
+        "status": "completed",
+        "attempts": [{"structured_result": {"test_acknowledged": True, "recipient_response": "test", "test_completed": True}}]
+    }
+    
+    dispatch_escalation(goal="Critical Risk", dry_run=False)
+    call1_kwargs = mock_client.calls.create.call_args_list[0].kwargs
+    key1 = call1_kwargs["idempotency_key"]
+    
+    dispatch_escalation(goal="Critical Risk", dry_run=False)
+    call2_kwargs = mock_client.calls.create.call_args_list[1].kwargs
+    key2 = call2_kwargs["idempotency_key"]
+    
+    assert key1 != key2, "Idempotency keys must be unique per live dispatch attempt."
